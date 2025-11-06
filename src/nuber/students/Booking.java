@@ -1,5 +1,8 @@
 package nuber.students;
 
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * 
  * Booking represents the overall "job" for a passenger getting to their destination.
@@ -20,7 +23,13 @@ package nuber.students;
  */
 public class Booking {
 
-		
+	private static final AtomicInteger NEXT_ID = new AtomicInteger(1);
+
+	private final NuberDispatch dispatch;
+	private final Passenger passenger;
+	private final int jobID;
+	private final long startTime;
+
 	/**
 	 * Creates a new booking for a given Nuber dispatch and passenger, noting that no
 	 * driver is provided as it will depend on whether one is available when the region 
@@ -31,7 +40,10 @@ public class Booking {
 	 */
 	public Booking(NuberDispatch dispatch, Passenger passenger)
 	{
-		// Hushhhhh
+		this.dispatch = dispatch;
+		this.passenger = passenger;
+		this.jobID = NEXT_ID.getAndIncrement();
+		this.startTime = new Date().getTime();
 	}
 	
 	/**
@@ -44,15 +56,41 @@ public class Booking {
 	 * 4.	It must then call the Driver.driveToDestination() function, with the thread pausing 
 	 * 			whilst as function is called.
 	 * 5.	Once at the destination, the time is recorded, so we know the total trip duration. 
-	 * 6.	The driver, now free, is added back into Dispatch�s list of available drivers. 
+	 * 6.	The driver, now free, is added back into Dispatch’s list of available drivers. 
 	 * 7.	The call() function the returns a BookingResult object, passing in the appropriate 
 	 * 			information required in the BookingResult constructor.
 	 *
 	 * @return A BookingResult containing the final information about the booking 
 	 */
 	public BookingResult call() {
-		// Hush, eclipse, you foolish IDE you
-		return null;
+
+	    // set up a driver via dispatch
+	    Driver driver = dispatch.getDriver();
+
+	    try {
+	        // if no driver was available (the driver from dispatch is null)
+	        // duration becomes the current time minus when the booking was created
+	        if (driver == null) {
+	            long duration = new Date().getTime() - startTime;
+	            return new BookingResult(jobID, passenger, null, duration);
+	        }
+
+	        // since we have a driver now no matter what, simulate pickup (which, this blocks this thread for the driver's pickup delay)
+	        driver.pickUpPassenger(passenger);
+
+	        // then simulate the drive to destination (blocks for the passenger's travel time)
+	        driver.driveToDestination();
+
+	        // then just compute total time taken from booking creation to arrival
+	        long duration = new Date().getTime() - startTime;
+	        return new BookingResult(jobID, passenger, driver, duration);
+
+	    } finally {
+	        // always return the driver to dispatch if we had one in the first place
+	        if (driver != null) {
+	            dispatch.addDriver(driver);
+	        }
+	    }
 	}
 	
 	/***
@@ -68,8 +106,8 @@ public class Booking {
 	@Override
 	public String toString()
 	{
-		// Hush eclipse
-		return "0:null:null";
+		String driverName = "null";
+		String passengerName = (passenger == null ? "null" : passenger.name);
+		return jobID + ":" + driverName + ":" + passengerName;
 	}
-
 }

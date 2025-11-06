@@ -36,12 +36,14 @@ public class AssignmentDriver {
 		
 		
 		//test creating a dispatch object
-		//NuberDispatch dispatch = new NuberDispatch(testRegions, logEvents);
+		NuberDispatch dispatch = new NuberDispatch(testRegions, logEvents);
 		
 		//create two new bookings
-		//Booking b1 = new Booking(dispatch, testPassenger);
-		//Booking b2 = new Booking(dispatch, testPassenger);
+		Booking b1 = new Booking(dispatch, testPassenger);
+		Booking b2 = new Booking(dispatch, testPassenger);
 		
+		System.out.println(b1.toString()); //should be {jobId}:null:Alex for both because I use the same passenger twice
+		System.out.println(b2.toString());
 		//test creating a new region
 		//NuberRegion region = new NuberRegion(dispatch, "Test Region", 10);
 
