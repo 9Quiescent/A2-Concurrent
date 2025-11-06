@@ -75,6 +75,9 @@ public class Booking {
 	            return new BookingResult(jobID, passenger, null, duration);
 	        }
 
+	        // we've actually got a driver now, so this job is no longer in an awaiting ether
+	        dispatch.decrementAwaitingDriver();  
+
 	        // since we have a driver now no matter what, simulate pickup (which, this blocks this thread for the driver's pickup delay)
 	        driver.pickUpPassenger(passenger);
 
@@ -92,7 +95,6 @@ public class Booking {
 	        }
 	    }
 	}
-	
 	/***
 	 * Should return the:
 	 * - booking ID, 

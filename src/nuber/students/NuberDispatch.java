@@ -18,11 +18,13 @@ public class NuberDispatch {
 	
 	private boolean logEvents = false;
 
-	// shared state protected by driverLock
 	private final java.util.ArrayDeque<Driver> idleDrivers = new java.util.ArrayDeque<Driver>();
 	private final Object driverLock = new Object();
 	private int bookingsAwaitingDriver = 0;
-	private final HashMap<String, Integer> regionConfig;
+
+	// regions are registered by NuberRegion upon construction
+	private final HashMap<String, NuberRegion> regions = new HashMap<String, NuberRegion>();
+	private volatile boolean shuttingDown = false;
 	
 	/**
 	 * Creates a new dispatch objects and instantiates the required regions and any other objects required.
@@ -34,7 +36,7 @@ public class NuberDispatch {
 	public NuberDispatch(HashMap<String, Integer> regionInfo, boolean logEvents)
 	{//
 		this.logEvents = logEvents;
-		this.regionConfig = new HashMap<String, Integer>(regionInfo);
+		// region instances are created outside of heere and will register with dispatch
 	}
 	
 	/**
@@ -108,10 +110,15 @@ public class NuberDispatch {
 	 * @return returns a Future<BookingResult> object
 	 */
 	public Future<BookingResult> bookPassenger(Passenger passenger, String region) {
+		if (shuttingDown) return null;
+
+		NuberRegion r = regions.get(region);
+		if (r == null) return null;
+
 		synchronized (driverLock) {
 			bookingsAwaitingDriver++;
 		}
-		return null;
+		return r.bookPassenger(passenger);
 	}
 
 	/**
@@ -132,12 +139,22 @@ public class NuberDispatch {
 	 * Tells all regions to finish existing bookings already allocated, and stop accepting new bookings
 	 */
 	public void shutdown() {
+		shuttingDown = true;
+		for (var reg : regions.values()) {
+			reg.shutdown();
+		}
 	}
 
-	// this is just a helper that's used when a booking successfully grabs a driver
+	// used when a booking successfully obtains a driver
 	void decrementAwaitingDriver() {
 		synchronized (driverLock) {
 			if (bookingsAwaitingDriver > 0) bookingsAwaitingDriver--;
 		}
+	}
+
+	// region registers itself
+	void registerRegion(String name, NuberRegion region) {
+		if (name == null || region == null) return;
+		regions.put(name, region);
 	}
 }

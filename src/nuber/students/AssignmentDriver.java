@@ -43,24 +43,18 @@ public class AssignmentDriver {
 		Booking b1 = new Booking(dispatch, testPassenger);
 		Booking b2 = new Booking(dispatch, testPassenger);
 		
-		System.out.println(b1.toString()); //should be {jobId}:null:Alex for both because I use the same passenger twice
-		System.out.println(b2.toString());
-		
-		// put a driver into dispatch so getDriver() to prevent an internal block 
-		dispatch.addDriver(testDriver);
-
-		// running a single booking and printing  the total trip time
-		Booking one = new Booking(dispatch, testPassenger);
-		BookingResult r = one.call();
-		System.out.println("single booking tripDuration(ms) = " + r.tripDuration);
-		
-		
-		
 		//test creating a new region
-		//NuberRegion region = new NuberRegion(dispatch, "Test Region", 10);
+		NuberRegion region = new NuberRegion(dispatch, "Test Region", 10);
 
 		//test adding a driver to dispatch
-		//dispatch.addDriver(testDriver);
+		dispatch.addDriver(testDriver);
+		
+		java.util.concurrent.Future<BookingResult> f = dispatch.bookPassenger(testPassenger, "Test Region");
+		System.out.println("pending after book = " + dispatch.getBookingsAwaitingDriver());
+		BookingResult done = f.get();
+		System.out.println("completed job=" + done.jobID + ", ms=" + done.tripDuration);
+		System.out.println("pending after driver allocation = " + dispatch.getBookingsAwaitingDriver());
+		dispatch.shutdown();
 		
 		//test booking a single passenger
 		//dispatch.bookPassenger(testPassenger, "Test Region");

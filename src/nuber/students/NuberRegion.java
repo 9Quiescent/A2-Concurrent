@@ -1,6 +1,10 @@
 package nuber.students;
 
 import java.util.concurrent.Future;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.Callable;
 
 /**
  * A single Nuber region that operates independently of other regions, other than getting 
@@ -18,7 +22,14 @@ import java.util.concurrent.Future;
  */
 public class NuberRegion {
 
-	
+	private final NuberDispatch dispatch;
+	private final String regionName;
+	private final int maxSimultaneousJobs;
+
+	private final Semaphore permits;
+	private final ExecutorService executor;
+	private volatile boolean shuttingDown = false;
+
 	/**
 	 * Creates a new Nuber region
 	 * 
@@ -28,7 +39,15 @@ public class NuberRegion {
 	 */
 	public NuberRegion(NuberDispatch dispatch, String regionName, int maxSimultaneousJobs)
 	{
-		// Be quiet eclipse
+		this.dispatch = dispatch;
+		this.regionName = regionName;
+		this.maxSimultaneousJobs = maxSimultaneousJobs;
+
+		this.permits = new Semaphore(maxSimultaneousJobs, true);
+		this.executor = Executors.newCachedThreadPool();
+
+		// register this region with the dispatch so bookPassenger(...) can route to it
+		this.dispatch.registerRegion(regionName, this);
 	}
 	
 	/**
@@ -44,8 +63,25 @@ public class NuberRegion {
 	 */
 	public Future<BookingResult> bookPassenger(Passenger waitingPassenger)
 	{		
-		
-		return null; // Be quiet eclipse
+		if (shuttingDown) {
+			dispatch.logEvent(null, "Booking rejected for region \"" + regionName + "\" (shutdown)");
+			return null;
+		}
+
+		Booking job = new Booking(dispatch, waitingPassenger);
+
+		Callable<BookingResult> task = () -> {
+			permits.acquire();
+			try {
+				dispatch.logEvent(job, "started in region \"" + regionName + "\"");
+				return job.call();
+			} finally {
+				permits.release();
+				dispatch.logEvent(job, "completed in region \"" + regionName + "\"");
+			}
+		};
+
+		return executor.submit(task);
 	}
 	
 	/**
@@ -53,7 +89,8 @@ public class NuberRegion {
 	 */
 	public void shutdown()
 	{
-		// Be quiet eclipse
+		shuttingDown = true;
+		executor.shutdown();
 	}
 		
 }
