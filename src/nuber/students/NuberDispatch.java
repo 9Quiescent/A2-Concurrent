@@ -17,6 +17,12 @@ public class NuberDispatch {
 	private final int MAX_DRIVERS = 999;
 	
 	private boolean logEvents = false;
+
+	// shared state protected by driverLock
+	private final java.util.ArrayDeque<Driver> idleDrivers = new java.util.ArrayDeque<Driver>();
+	private final Object driverLock = new Object();
+	private int bookingsAwaitingDriver = 0;
+	private final HashMap<String, Integer> regionConfig;
 	
 	/**
 	 * Creates a new dispatch objects and instantiates the required regions and any other objects required.
@@ -27,8 +33,8 @@ public class NuberDispatch {
 	 */
 	public NuberDispatch(HashMap<String, Integer> regionInfo, boolean logEvents)
 	{//
-		
-		this.logEvents = logEvents; // So eclipse stops complaining
+		this.logEvents = logEvents;
+		this.regionConfig = new HashMap<String, Integer>(regionInfo);
 	}
 	
 	/**
@@ -41,8 +47,15 @@ public class NuberDispatch {
 	 */
 	public boolean addDriver(Driver newDriver)
 	{
-		
-		return true; // So eclipse stops complaining
+		if (newDriver == null) return false;
+		synchronized (driverLock) {
+			if (idleDrivers.size() >= MAX_DRIVERS) {
+				return false;
+			}
+			idleDrivers.addLast(newDriver);
+			driverLock.notifyAll();
+			return true;
+		}
 	}
 	
 	/**
@@ -54,8 +67,17 @@ public class NuberDispatch {
 	 */
 	public Driver getDriver()
 	{
-		
-		return null; // So eclipse stops complaining
+		synchronized (driverLock) {
+			while (idleDrivers.isEmpty()) {
+				try {
+					driverLock.wait();
+				} catch (InterruptedException ie) {
+					Thread.currentThread().interrupt();
+					return null;
+				}
+			}
+			return idleDrivers.pollFirst();
+		}
 	}
 
 	/**
@@ -86,8 +108,10 @@ public class NuberDispatch {
 	 * @return returns a Future<BookingResult> object
 	 */
 	public Future<BookingResult> bookPassenger(Passenger passenger, String region) {
-		
-		return null; // So eclipse stops complaining
+		synchronized (driverLock) {
+			bookingsAwaitingDriver++;
+		}
+		return null;
 	}
 
 	/**
@@ -99,15 +123,21 @@ public class NuberDispatch {
 	 */
 	public int getBookingsAwaitingDriver()
 	{
-		
-		return 0; // So eclipse stops complaining
+		synchronized (driverLock) {
+			return bookingsAwaitingDriver;
+		}
 	}
 	
 	/**
 	 * Tells all regions to finish existing bookings already allocated, and stop accepting new bookings
 	 */
 	public void shutdown() {
-		// And one last time, so eclipse stops complaining
 	}
 
+	// this is just a helper that's used when a booking successfully grabs a driver
+	void decrementAwaitingDriver() {
+		synchronized (driverLock) {
+			if (bookingsAwaitingDriver > 0) bookingsAwaitingDriver--;
+		}
+	}
 }

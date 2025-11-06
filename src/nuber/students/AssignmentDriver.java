@@ -35,6 +35,7 @@ public class AssignmentDriver {
 		}
 		
 		
+		
 		//test creating a dispatch object
 		NuberDispatch dispatch = new NuberDispatch(testRegions, logEvents);
 		
@@ -44,6 +45,17 @@ public class AssignmentDriver {
 		
 		System.out.println(b1.toString()); //should be {jobId}:null:Alex for both because I use the same passenger twice
 		System.out.println(b2.toString());
+		
+		// put a driver into dispatch so getDriver() to prevent an internal block 
+		dispatch.addDriver(testDriver);
+
+		// running a single booking and printing  the total trip time
+		Booking one = new Booking(dispatch, testPassenger);
+		BookingResult r = one.call();
+		System.out.println("single booking tripDuration(ms) = " + r.tripDuration);
+		
+		
+		
 		//test creating a new region
 		//NuberRegion region = new NuberRegion(dispatch, "Test Region", 10);
 
