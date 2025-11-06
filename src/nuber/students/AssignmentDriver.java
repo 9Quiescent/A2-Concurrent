@@ -4,7 +4,6 @@ import java.util.HashMap;
 
 public class AssignmentDriver {
 
-	
 	public static void main(String[] args) throws Exception {
 
 		//turn this or off to enable/disable output from the dispatch's logEvent function
@@ -13,8 +12,6 @@ public class AssignmentDriver {
 		
 		HashMap<String, Integer> testRegions = new HashMap<String, Integer>();
 		testRegions.put("Test Region", 50);
-		
-
 		
 		/**
 		 * This driver has a number of different sections that you can uncomment as you progress through the assignment
@@ -34,8 +31,6 @@ public class AssignmentDriver {
 			e.printStackTrace();
 		}
 		
-		
-		
 		//test creating a dispatch object
 		NuberDispatch dispatch = new NuberDispatch(testRegions, logEvents);
 		
@@ -44,40 +39,32 @@ public class AssignmentDriver {
 		Booking b2 = new Booking(dispatch, testPassenger);
 		
 		//test creating a new region
-		NuberRegion region = new NuberRegion(dispatch, "Test Region", 10);
+		 NuberRegion region = new NuberRegion(dispatch, "Test Region", 10);
 
 		//test adding a driver to dispatch
 		dispatch.addDriver(testDriver);
 		
+		//test booking a single passenger and observe counters
 		java.util.concurrent.Future<BookingResult> f = dispatch.bookPassenger(testPassenger, "Test Region");
 		System.out.println("pending after book = " + dispatch.getBookingsAwaitingDriver());
 		BookingResult done = f.get();
 		System.out.println("completed job=" + done.jobID + ", ms=" + done.tripDuration);
 		System.out.println("pending after driver allocation = " + dispatch.getBookingsAwaitingDriver());
-		dispatch.shutdown();
 		
-		//test booking a single passenger
-		//dispatch.bookPassenger(testPassenger, "Test Region");
-
 		//shutdown the dispatch when it's done
-		//dispatch.shutdown();
-
-		
-		
-		
+		dispatch.shutdown();
 		
 		//create NuberDispatch for given regions and max simultaneous jobs per region
 		//once you have the above running, you should be able to uncomment the Simulations below to start to put everything together
 		
-		//HashMap<String, Integer> regions = new HashMap<String, Integer>();
-		//regions.put("North", 50);
-		//regions.put("South", 50);
+		HashMap<String, Integer> regions = new HashMap<String, Integer>();
+		regions.put("North", 50);
+		regions.put("South", 50);
 		
-		//new Simulation(regions, 1, 10, 1000, logEvents);
-		//new Simulation(regions, 5, 10, 1000, logEvents);
-		//new Simulation(regions, 10, 10, 1000, logEvents);
-		//new Simulation(regions, 10, 100, 1000, logEvents);
-		//new Simulation(regions, 1, 50, 1000, logEvents);
+		new Simulation(regions, 1, 10, 1000, logEvents);
+		new Simulation(regions, 5, 10, 1000, logEvents);
+		new Simulation(regions, 10, 10, 1000, logEvents);
+		new Simulation(regions, 10, 100, 1000, logEvents);
+		new Simulation(regions, 1, 50, 1000, logEvents);
 	}
-
 }
